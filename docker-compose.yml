@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: dwellfi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dwellfi
+      POSTGRES_PASSWORD: dwellfi
+      POSTGRES_DB: dwellfi
+    ports:
+      - "5433:5432"
+    volumes:
+      - dwellfi_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dwellfi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dwellfi_pgdata:

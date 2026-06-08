@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id              String      @id @default(uuid())
+  title           String
+  description     String // JD text — source for skill extraction + display
+  jd_url          String? // optional link to original JD doc — candidate views on drop page
+  required_skills String[] // parsed from JD
+  public_slug     String      @unique // candidate drop link token
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+  candidates      Candidate[]
+}
+
+model Candidate {
+  id     String @id @default(uuid())
+  job_id String
+  job    Job    @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  name  String
+  email String // dedup key within a job
+
+  location         String?
+  phone            String?
+  experience_years Float?
+  grad_year        Int?
+  linkedin_url     String?
+  github_url       String?
+
+  companies      String[] @default([]) // ordered, last = most recent/priority
+  skills         String[] @default([]) // all extracted
+  matched_skills String[] @default([]) // intersection with job.required_skills
+
+  parsed      Json? // raw parser output — re-derive columns without re-parsing
+  source_file String? // /data/uploads/<id>.pdf
+  status      CandidateStatus @default(PENDING)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([job_id, email]) // re-submit updates the same row
+  @@index([job_id, status])
+}
+
+enum CandidateStatus {
+  PENDING
+  DONE
+  FAILED
+}
