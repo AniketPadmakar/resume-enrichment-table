@@ -1,8 +1,13 @@
 import prisma from "../db.js";
 import { newSlug } from "../lib/slug.js";
 import { getPagination, buildPagination } from "../lib/pagination.js";
+import { extractJdSkills } from "../lib/extract.js";
 import { NotFoundError } from "../middleware/error.js";
 import type { CreateJobInput, UpdateJobInput } from "../schemas/job.js";
+
+export async function suggestSkills(description: string): Promise<string[]> {
+  return extractJdSkills(description);
+}
 
 export async function createJob(input: CreateJobInput) {
   return prisma.job.create({
@@ -40,11 +45,11 @@ export async function getJob(id: string) {
 }
 
 export async function updateJob(id: string, input: UpdateJobInput) {
-  await getJob(id); // 404 if missing, before the write
+  await getJob(id);
   return prisma.job.update({ where: { id }, data: input });
 }
 
 export async function deleteJob(id: string) {
   await getJob(id);
-  await prisma.job.delete({ where: { id } }); // cascades to candidates
+  await prisma.job.delete({ where: { id } });
 }

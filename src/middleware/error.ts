@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
+import { MulterError } from "multer";
 import { sendError } from "../lib/response.js";
 
-// Throw an AppError subclass anywhere; the global handler maps it to a clean response.
 export class AppError extends Error {
   statusCode: number;
   code: string;
@@ -35,13 +35,13 @@ export function errorHandler(
   const trace = req.trace_id ?? "-";
 
   if (err instanceof AppError) {
-    console.error(` [${trace}] ${err.code}: ${err.message}`);
+    console.error(`❌ [${trace}] ${err.code}: ${err.message}`);
     return sendError(res, { message: err.message, statusCode: err.statusCode, code: err.code });
   }
 
   if (err instanceof ZodError) {
     const msg = err.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
-    console.error(` [${trace}] VALIDATION: ${msg}`);
+    console.error(`❌ [${trace}] VALIDATION: ${msg}`);
     return sendError(res, { message: msg, statusCode: 400, code: "VALIDATION_ERROR" });
   }
 
@@ -54,13 +54,16 @@ export function errorHandler(
     }
   }
 
-  // body-parser / http-errors carry a 4xx status (malformed JSON, payload too large)
+  if (err instanceof MulterError) {
+    return sendError(res, { message: err.message, statusCode: 400, code: "UPLOAD_ERROR" });
+  }
+
   const status = (err as { statusCode?: number; status?: number })?.statusCode ?? (err as { status?: number })?.status;
   if (typeof status === "number" && status >= 400 && status < 500) {
     const message = err instanceof Error ? err.message : "Bad request";
     return sendError(res, { message, statusCode: status, code: "BAD_REQUEST" });
   }
 
-  console.error(` [${trace}] UNHANDLED`, err);
+  console.error(`[${trace}] UNHANDLED`, err);
   return sendError(res, { message: "Internal server error", statusCode: 500 });
 }

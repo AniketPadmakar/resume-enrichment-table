@@ -1,10 +1,77 @@
+import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "../db.js";
+import { storeFile } from "../lib/storage.js";
+import { parsePdf } from "../lib/parser.js";
+import { extractResumeFields, matchSkills } from "../lib/extract.js";
 import { getPagination, buildPagination } from "../lib/pagination.js";
 import { NotFoundError } from "../middleware/error.js";
-import type { CandidateFilter } from "../schemas/candidate.js";
+import type { CandidateFilter, SubmitCandidateInput } from "../schemas/candidate.js";
 
-// Operator grid: filterable, paginated candidate list for a job.
+export async function getPublicJob(slug: string) {
+  const job = await prisma.job.findUnique({
+    where: { public_slug: slug },
+    select: { id: true, title: true, description: true, jd_url: true },
+  });
+  if (!job) throw new NotFoundError("This job link is invalid or expired");
+  return job;
+}
+
+export async function submitCandidate(
+  slug: string,
+  input: SubmitCandidateInput,
+  file: Buffer,
+  traceId: string,
+) {
+  const job = await prisma.job.findUnique({
+    where: { public_slug: slug },
+    select: { id: true, required_skills: true },
+  });
+  if (!job) throw new NotFoundError("This job link is invalid or expired");
+
+  const key = `${job.id}/${randomUUID()}.pdf`;
+  await storeFile(key, file);
+
+  const base = { name: input.name, source_file: key, status: "PENDING" as const };
+  const candidate = await prisma.candidate.upsert({
+    where: { job_id_email: { job_id: job.id, email: input.email } },
+    create: { job_id: job.id, email: input.email, ...base },
+    update: base,
+  });
+
+  let text: string;
+  let fields;
+  try {
+    text = await parsePdf(file);
+    fields = await extractResumeFields(text, job.required_skills);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`[${traceId}] extraction failed for ${candidate.id}: ${reason}`);
+    return prisma.candidate.update({
+      where: { id: candidate.id },
+      data: { status: "FAILED", parsed: { error: reason } as Prisma.InputJsonValue },
+    });
+  }
+
+  const matched = matchSkills(fields.skills, job.required_skills);
+  return prisma.candidate.update({
+    where: { id: candidate.id },
+    data: {
+      location: fields.location,
+      phone: fields.phone,
+      experience_years: fields.experience_years,
+      grad_year: fields.grad_year,
+      linkedin_url: fields.linkedin_url,
+      github_url: fields.github_url,
+      companies: fields.companies,
+      skills: fields.skills,
+      matched_skills: matched,
+      parsed: { raw_text: text, extracted: fields } as unknown as Prisma.InputJsonValue,
+      status: "DONE",
+    },
+  });
+}
+
 export async function listCandidates(
   jobId: string,
   filter: CandidateFilter,
@@ -12,8 +79,6 @@ export async function listCandidates(
 ) {
   const { page, limit, skip, take } = getPagination(query);
 
-  // Need the JD skills up front: for match_score, and to canonicalise a skill filter
-  // (stored skills use JD casing; Postgres array `has` is case-sensitive).
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     select: { required_skills: true },
@@ -42,8 +107,6 @@ export async function listCandidates(
     prisma.candidate.findMany({ where, skip, take, orderBy: { created_at: "desc" } }),
     prisma.candidate.count({ where }),
   ]);
-
-  // match_score computed at read — not stored (N is tiny).
   const items = rows.map((c) => ({
     ...c,
     match_score: required ? Math.round((c.matched_skills.length / required) * 100) / 100 : null,

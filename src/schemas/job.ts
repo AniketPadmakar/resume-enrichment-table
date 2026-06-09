@@ -9,8 +9,14 @@ export const createJobSchema = z
   })
   .strict();
 
-// All fields optional on update.
 export const updateJobSchema = createJobSchema.partial();
+
+export const extractSkillsSchema = z
+  .object({
+    description: z.string().min(1, "description (JD) is required"),
+  })
+  .strict();
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;
 export type UpdateJobInput = z.infer<typeof updateJobSchema>;
+export type ExtractSkillsInput = z.infer<typeof extractSkillsSchema>;

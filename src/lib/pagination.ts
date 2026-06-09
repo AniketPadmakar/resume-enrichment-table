@@ -1,4 +1,3 @@
-// Parse ?page&limit into Prisma skip/take, clamped to sane bounds.
 export function getPagination(query: { page?: unknown; limit?: unknown }, defaultLimit = 20) {
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || defaultLimit));

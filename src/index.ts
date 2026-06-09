@@ -4,6 +4,7 @@ import { traceMiddleware } from "./middleware/trace.js";
 import { errorHandler } from "./middleware/error.js";
 import { jobRouter } from "./routes/job.js";
 import { candidateRouter } from "./routes/candidate.js";
+import { publicRouter } from "./routes/public.js";
 
 const app = express();
 
@@ -16,11 +17,11 @@ app.get("/health", (_req, res) => {
 
 app.use("/jobs", jobRouter);
 app.use("/candidates", candidateRouter);
+app.use("/public", publicRouter);
 
-// error handler must be last
 app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 8000;
 app.listen(port, () => {
-  console.log(`✅ [resume-enrichment] API listening on http://localhost:${port}`);
+  console.log(` API listening on http://localhost:${port}`);
 });

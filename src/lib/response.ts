@@ -1,6 +1,5 @@
 import type { Response } from "express";
 
-// Single response shape across every endpoint so the frontend never guesses.
 export function sendSuccess<T>(res: Response, data: T, message = "OK", status = 200): void {
   res.status(status).json({ success: true, message, data });
 }

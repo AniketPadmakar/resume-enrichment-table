@@ -1,10 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
 
-// Every request gets a trace id, echoed in logs + the response header.
-// Traceability pillar: one id correlates parse -> extract -> write for a submission.
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       trace_id: string;

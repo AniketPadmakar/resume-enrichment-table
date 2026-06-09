@@ -1,7 +1,12 @@
 import { z } from "zod";
 
-// Operator grid filters. Coerce query strings to the right types.
-// .nonnegative()/.int() also reject NaN, so garbage like ?min_exp=abc → 400, not a Prisma 500.
+export const submitCandidateSchema = z
+  .object({
+    name: z.string().min(1, "name is required"),
+    email: z.string().email("a valid email is required"),
+  })
+  .strict();
+
 export const candidateFilterSchema = z.object({
   location: z.string().optional(),
   min_exp: z.coerce.number().nonnegative().optional(),
@@ -11,4 +16,5 @@ export const candidateFilterSchema = z.object({
   q: z.string().optional(),
 });
 
+export type SubmitCandidateInput = z.infer<typeof submitCandidateSchema>;
 export type CandidateFilter = z.infer<typeof candidateFilterSchema>;
