@@ -4,3 +4,4 @@ import * as candidate from "../controllers/candidate.js";
 export const candidateRouter = Router();
 
 candidateRouter.get("/:id", candidate.get);
+candidateRouter.get("/:id/resume", candidate.resume);

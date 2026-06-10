@@ -2,7 +2,8 @@ import type { Request, Response } from "express";
 import { submitCandidateSchema, candidateFilterSchema } from "../schemas/candidate.js";
 import * as candidateService from "../services/candidate.js";
 import { sendSuccess } from "../lib/response.js";
-import { ValidationError } from "../middleware/error.js";
+import { ValidationError, NotFoundError } from "../middleware/error.js";
+import { resolveFilePath } from "../lib/storage.js";
 
 export async function publicJob(req: Request, res: Response): Promise<void> {
   const job = await candidateService.getPublicJob(req.params.slug as string);
@@ -34,4 +35,10 @@ export async function listForJob(req: Request, res: Response): Promise<void> {
 export async function get(req: Request, res: Response): Promise<void> {
   const candidate = await candidateService.getCandidate(req.params.id as string);
   sendSuccess(res, candidate);
+}
+
+export async function resume(req: Request, res: Response): Promise<void> {
+  const candidate = await candidateService.getCandidate(req.params.id as string);
+  if (!candidate.source_file) throw new NotFoundError("No résumé on file");
+  res.type("application/pdf").sendFile(resolveFilePath(candidate.source_file));
 }

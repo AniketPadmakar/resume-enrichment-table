@@ -1,7 +1,7 @@
 import prisma from "../db.js";
 import { newSlug } from "../lib/slug.js";
 import { getPagination, buildPagination } from "../lib/pagination.js";
-import { extractJdSkills } from "../lib/extract.js";
+import { extractJdSkills, matchSkills } from "../lib/extract.js";
 import { NotFoundError } from "../middleware/error.js";
 import type { CreateJobInput, UpdateJobInput } from "../schemas/job.js";
 
@@ -46,7 +46,23 @@ export async function getJob(id: string) {
 
 export async function updateJob(id: string, input: UpdateJobInput) {
   await getJob(id);
-  return prisma.job.update({ where: { id }, data: input });
+  const job = await prisma.job.update({ where: { id }, data: input });
+
+  if (input.required_skills) {
+    const candidates = await prisma.candidate.findMany({
+      where: { job_id: id },
+      select: { id: true, skills: true },
+    });
+    await Promise.all(
+      candidates.map((c) =>
+        prisma.candidate.update({
+          where: { id: c.id },
+          data: { matched_skills: matchSkills(c.skills, input.required_skills!) },
+        }),
+      ),
+    );
+  }
+  return job;
 }
 
 export async function deleteJob(id: string) {

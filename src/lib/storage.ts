@@ -9,3 +9,12 @@ export async function storeFile(key: string, data: Buffer): Promise<string> {
   await writeFile(full, data);
   return key;
 }
+
+export function resolveFilePath(key: string): string {
+  const base = resolve(baseDir);
+  const full = resolve(base, key);
+  if (full !== base && !full.startsWith(base + "/")) {
+    throw new Error("invalid file key");
+  }
+  return full;
+}
