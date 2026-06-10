@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apply</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      main { max-width: 620px; margin: 0 auto; width: 100%; }
+      .jd {
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.7;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 8px;
+      }
+      .jd.clamp {
+        max-height: 168px;
+        overflow: hidden;
+        -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+        mask-image: linear-gradient(to bottom, #000 70%, transparent);
+      }
+      .jd-toggle {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        padding: 0;
+        margin-bottom: 10px;
+      }
+      .jd-toggle:hover { text-decoration: underline; }
+      .jd-link {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .jd-link:hover { text-decoration: underline; }
+      .done { text-align: center; padding: 34px 0; }
+      .done .mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .done .mark::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--accent);
+      }
+      .done h2 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+      input[type="file"] { padding: 8px 10px; cursor: pointer; }
+      input[type="file"]::file-selector-button {
+        font: inherit;
+        font-size: 12.5px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 7px 13px;
+        margin-right: 12px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">A</div>
+      <div>
+        <h1>Apply</h1>
+        <p>Drop your résumé · we take it from here</p>
+      </div>
+    </header>
+
+    <main>
+      <section id="jobCard" class="card hidden">
+        <h2 id="jobTitle"></h2>
+        <div id="jd" class="jd clamp"></div>
+        <button id="jdToggle" class="jd-toggle hidden" type="button">Read full description ▾</button>
+        <a id="jdLink" class="jd-link hidden" target="_blank" rel="noopener">View full JD ↗</a>
+
+        <form id="applyForm">
+          <label for="name">Full name</label>
+          <input id="name" required placeholder="Jane Dev" />
+
+          <label for="email">Email</label>
+          <input id="email" type="email" required placeholder="jane@example.com" />
+
+          <label for="file">Résumé · PDF</label>
+          <input id="file" type="file" accept="application/pdf" required />
+
+          <div class="row" style="margin-top: 20px">
+            <button id="submitBtn" class="primary" type="submit">Submit application</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="doneCard" class="card hidden">
+        <div class="done">
+          <div class="mark">Received</div>
+          <h2>Application in</h2>
+          <p class="muted">Thanks for applying. The recruiter has your résumé.</p>
+        </div>
+      </section>
+
+      <section id="errorCard" class="card hidden">
+        <h2>Link not found</h2>
+        <p class="muted" id="errorMsg">This application link is invalid or has expired.</p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+    <script src="/apply.js"></script>
+  </body>
+</html>

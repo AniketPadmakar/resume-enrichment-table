@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 import express from "express";
 import { traceMiddleware } from "./middleware/trace.js";
 import { errorHandler } from "./middleware/error.js";
@@ -10,6 +11,8 @@ const app = express();
 
 app.use(express.json());
 app.use(traceMiddleware);
+
+app.use(express.static(path.resolve("public")));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });

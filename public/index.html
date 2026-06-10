@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recruiter Console</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">R</div>
+      <div>
+        <h1>Recruiter Console</h1>
+        <p>Define a role · share the link · read the enriched grid</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2><span class="no">01</span> Create a job</h2>
+        <label for="title">Title</label>
+        <input id="title" placeholder="Backend Engineer" />
+
+        <label for="jd">Job description</label>
+        <textarea id="jd" placeholder="Paste the JD here…"></textarea>
+
+        <label for="skillInput">Required skills · type and press enter, drag to reorder</label>
+        <div id="skillsEditor" class="chip-input">
+          <input id="skillInput" placeholder="Add a skill…" />
+        </div>
+
+        <div class="row" style="margin-top: 16px">
+          <button id="suggestBtn" class="ghost" type="button">Suggest from JD</button>
+          <button id="createBtn" class="primary" type="button">Create job</button>
+        </div>
+
+        <div id="linkArea" class="hidden">
+          <label>Shareable candidate link</label>
+          <div class="link-box">
+            <input id="applyLink" readonly />
+            <button id="copyBtn" type="button">Copy</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card flush">
+        <div class="tabs" id="jobsTabs">
+          <span class="muted">Loading jobs…</span>
+        </div>
+
+        <div class="grid-head" style="margin-top: 18px">
+          <h2 id="candTitle">Candidates</h2>
+          <div class="row">
+            <button id="copyLinkBtn" class="link-chip" type="button" title="Copy apply link">
+              <span id="linkText"></span>
+            </button>
+            <button id="openLinkBtn" class="ghost" type="button">Open ↗</button>
+            <button id="editJobBtn" class="ghost" type="button">Edit job</button>
+          </div>
+        </div>
+
+        <div class="filters">
+          <input id="fSearch" placeholder="Search name or email" />
+          <input id="fLocation" placeholder="Location" />
+          <input id="fMinExp" type="number" min="0" step="0.5" placeholder="Min exp (yrs)" />
+          <input id="fMinScore" type="number" min="0" max="100" placeholder="Min score %" />
+          <select id="fStatus">
+            <option value="">All status</option>
+            <option value="DONE">Done</option>
+            <option value="PENDING">Analyzing</option>
+            <option value="FAILED">Failed</option>
+          </select>
+          <select id="fSort">
+            <option value="score">Sort: Top match</option>
+            <option value="recent">Sort: Most recent</option>
+            <option value="exp">Sort: Most experience</option>
+          </select>
+          <button id="fClear" class="ghost" type="button">Clear</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Location</th>
+                <th>Exp</th>
+                <th>Grad</th>
+                <th>Companies</th>
+                <th>Matched skills</th>
+                <th>Score</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="candBody">
+              <tr><td colspan="10" class="muted" style="padding:18px">Select a job above.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pager">
+          <span id="pagerInfo" class="muted"></span>
+          <div class="row">
+            <button id="prevPage" class="ghost" type="button">Prev</button>
+            <span id="pageInfo" class="muted"></span>
+            <button id="nextPage" class="ghost" type="button">Next</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <div id="drawer" class="drawer hidden">
+      <div class="drawer-backdrop" id="drawerBackdrop"></div>
+      <aside class="drawer-panel">
+        <div class="drawer-head">
+          <h2 id="detailName">Candidate</h2>
+          <button id="drawerClose" class="icon-btn" aria-label="Close">×</button>
+        </div>
+        <div id="detailBody" class="drawer-body"></div>
+      </aside>
+    </div>
+
+    <div id="jobModal" class="modal hidden">
+      <div class="modal-backdrop" id="jobModalBackdrop"></div>
+      <div class="modal-panel">
+        <div class="modal-head">
+          <h2>Edit job</h2>
+          <button id="editClose" class="icon-btn" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body">
+          <label for="editTitle">Title</label>
+          <input id="editTitle" />
+          <label for="editJd">Job description</label>
+          <textarea id="editJd"></textarea>
+          <label for="editSkillInput">Required skills · type and press enter, drag to reorder</label>
+          <div id="editSkillsEditor" class="chip-input">
+            <input id="editSkillInput" placeholder="Add a skill…" />
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button id="editDelete" class="ghost danger" type="button">Delete job</button>
+          <div class="row">
+            <button id="editCancel" class="ghost" type="button">Cancel</button>
+            <button id="editSave" class="primary" type="button">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
