@@ -17,6 +17,67 @@ export async function getPublicJob(slug: string) {
   return job;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, base = 500): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      last = e;
+      if (i < attempts - 1) await sleep(base * 2 ** i);
+    }
+  }
+  throw last;
+}
+
+async function failCandidate(id: string, reason: string, err: unknown, traceId: string) {
+  console.error(`[${traceId}] ${reason} for ${id}: ${err instanceof Error ? err.message : err}`);
+  await prisma.candidate.update({
+    where: { id },
+    data: { status: "FAILED", parsed: { error: reason } as Prisma.InputJsonValue },
+  });
+}
+
+async function processCandidate(
+  candidateId: string,
+  file: Buffer,
+  requiredSkills: string[],
+  traceId: string,
+) {
+  let text: string;
+  try {
+    text = await parsePdf(file);
+  } catch (err) {
+    return failCandidate(candidateId, "Could not read the PDF", err, traceId);
+  }
+
+  let fields;
+  try {
+    fields = await withRetry(() => extractResumeFields(text, requiredSkills));
+  } catch (err) {
+    return failCandidate(candidateId, "Extraction failed after retries", err, traceId);
+  }
+
+  await prisma.candidate.update({
+    where: { id: candidateId },
+    data: {
+      location: fields.location,
+      phone: fields.phone,
+      experience_years: fields.experience_years,
+      grad_year: fields.grad_year,
+      linkedin_url: fields.linkedin_url,
+      github_url: fields.github_url,
+      companies: fields.companies,
+      skills: fields.skills,
+      matched_skills: matchSkills(fields.skills, requiredSkills),
+      parsed: { raw_text: text, extracted: fields } as unknown as Prisma.InputJsonValue,
+      status: "DONE",
+    },
+  });
+}
+
 export async function submitCandidate(
   slug: string,
   input: SubmitCandidateInput,
@@ -39,37 +100,11 @@ export async function submitCandidate(
     update: base,
   });
 
-  let text: string;
-  let fields;
-  try {
-    text = await parsePdf(file);
-    fields = await extractResumeFields(text, job.required_skills);
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.error(`[${traceId}] extraction failed for ${candidate.id}: ${reason}`);
-    return prisma.candidate.update({
-      where: { id: candidate.id },
-      data: { status: "FAILED", parsed: { error: reason } as Prisma.InputJsonValue },
-    });
-  }
+  processCandidate(candidate.id, file, job.required_skills, traceId).catch((e) =>
+    console.error(`[${traceId}] background processing crashed for ${candidate.id}`, e),
+  );
 
-  const matched = matchSkills(fields.skills, job.required_skills);
-  return prisma.candidate.update({
-    where: { id: candidate.id },
-    data: {
-      location: fields.location,
-      phone: fields.phone,
-      experience_years: fields.experience_years,
-      grad_year: fields.grad_year,
-      linkedin_url: fields.linkedin_url,
-      github_url: fields.github_url,
-      companies: fields.companies,
-      skills: fields.skills,
-      matched_skills: matched,
-      parsed: { raw_text: text, extracted: fields } as unknown as Prisma.InputJsonValue,
-      status: "DONE",
-    },
-  });
+  return candidate;
 }
 
 export async function listCandidates(

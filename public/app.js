@@ -216,6 +216,7 @@ function renderCandidates(items, startIndex = 0) {
 // ---- client-side filter / sort / paginate ----
 let allCandidates = [];
 let candPage = 1;
+let pollTimer = null;
 const PAGE_SIZE = 10;
 
 async function loadCandidates() {
@@ -223,6 +224,25 @@ async function loadCandidates() {
   allCandidates = items;
   candPage = 1;
   applyView();
+  schedulePoll();
+}
+
+// while any candidate is still Analyzing, re-fetch so the grid flips to Done live
+function schedulePoll() {
+  clearTimeout(pollTimer);
+  if (!allCandidates.some((c) => c.status === "PENDING")) return;
+  const jobAtSchedule = currentJobId;
+  pollTimer = setTimeout(async () => {
+    if (jobAtSchedule !== currentJobId) return;
+    try {
+      const { items } = await api(`/jobs/${currentJobId}/candidates?limit=500`);
+      allCandidates = items;
+      applyView();
+      schedulePoll();
+    } catch {
+      /* keep last view on a transient error */
+    }
+  }, 3000);
 }
 
 function applyView() {
